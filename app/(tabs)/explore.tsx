@@ -1,110 +1,134 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// app/(tabs)/explore.tsx
+import DateTimePicker from '@react-native-community/datetimepicker';
+import axios from 'axios';
+import React, { useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {
+  Appbar,
+  Button,
+  Card,
+  Paragraph,
+  Switch,
+  TextInput
+} from 'react-native-paper';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+const API = 'http://192.168.0.100:3000';
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
+  const [petType, setPetType]       = useState('');
+  const [from, setFrom]             = useState<Date>(new Date());
+  const [to, setTo]                 = useState<Date>(new Date());
+  const [showDT, setShowDT]         = useState<'from'|'to'|null>(null);
+  const [unmatched, setUnmatched]   = useState(true);
+  const [results, setResults]       = useState<any[]>([]);
+  const [loading, setLoading]       = useState(false);
+
+  const runSearch = async () => {
+    setLoading(true);
+    try {
+      // build shared params object
+      const params: any = {};
+      let data;
+
+      if (petType) {
+        // j) caregivers who service a particular pet type
+        params.select      = 'user_main(name),pets(type)';
+        params['role_type']= 'eq.Caregiver';
+        params['pets.type']= `eq.${petType}`;
+        ({ data } = await axios.get(`${API}/care_event`, { params }));
+        // data elements will have { user_main: { name }, pets: { type } }
+      } else {
+        // i) care events in a given date range
+        params.select        = '*,user_main(name),pets(type)';
+        params['date_time']  = `gte.${from.toISOString()}`;
+        params['date_time'] += `,lte.${to.toISOString()}`;
+        ({ data } = await axios.get(`${API}/care_event`, { params }));
+        // data elements will include user_main.name and pets.type
+      }
+
+      setResults(data);
+    } catch(e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <SafeAreaView style={{flex:1}}>
+      <Appbar.Header><Appbar.Content title="Explore Requests" /></Appbar.Header>
+      <View style={styles.filters}>
+        <TextInput
+          label="Pet Type"
+          value={petType}
+          onChangeText={setPetType}
+          style={styles.input}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+        <View style={styles.dtRow}>
+          <Button onPress={()=>setShowDT('from')}>From: {from.toLocaleDateString()}</Button>
+          <Button onPress={()=>setShowDT('to')}>To:   {to.toLocaleDateString()}</Button>
+        </View>
+        <View style={styles.switchRow}>
+          <Paragraph>Unmatched only</Paragraph>
+          <Switch value={unmatched} onValueChange={setUnmatched} />
+        </View>
+        <Button mode="contained" onPress={runSearch} loading={loading}>
+          Search
+        </Button>
+      </View>
+
+      {showDT && (
+        <DateTimePicker
+          value={ showDT==='from' ? from : to }
+          mode="date"
+          display="default"
+          onChange={(_, val)=>{
+            if (showDT==='from' && val) setFrom(val);
+            if (showDT==='to'   && val) setTo(val);
+            setShowDT(null);
+          }}
+        />
+      )}
+
+      <FlatList
+        data={results}
+        keyExtractor={(item, index) =>
+          item.event_id
+            ? String(item.event_id)
+            : `${item.user_main?.name}-${item.pets?.type}-${index}`
+        }
+        ListEmptyComponent={()=> <Paragraph style={styles.empty}>No results.</Paragraph>}
+        renderItem={({item}) => (
+          <Card style={styles.card}>
+            <Card.Content>
+              {item.user_main && (
+                <Paragraph>Name: {item.user_main.name}</Paragraph>
+              )}
+              {item.pets && (
+                <Paragraph>Pet Type: {item.pets.type}</Paragraph>
+              )}
+              <Paragraph>
+                Date: {new Date(item.date_time).toLocaleString()}
+              </Paragraph>
+            </Card.Content>
+          </Card>
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  filters: { padding:16 },
+  input:   { marginBottom:12 },
+  dtRow:   { flexDirection:'row', justifyContent:'space-between', marginBottom:12 },
+  switchRow:{ flexDirection:'row', alignItems:'center', marginBottom:12 },
+  card:    { margin:16, marginBottom:12 },
+  empty:   { textAlign:'center', marginTop:32, color:'gray' },
 });

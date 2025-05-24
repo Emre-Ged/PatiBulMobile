@@ -1,75 +1,89 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// app/(tabs)/index.tsx
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {
+  Appbar,
+  Button,
+  Card,
+  Paragraph,
+  TextInput,
+  Title,
+} from 'react-native-paper';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const API = 'http://192.168.0.100:3000';
 
 export default function HomeScreen() {
+  const [location, setLocation] = useState('Girne Park');
+  const [services, setServices] = useState<any[]>([]);
+
+  const load = async () => {
+    try {
+      const { data } = await axios.get(`${API}/care_event`, {
+        params: {
+          role_type: 'eq.Caregiver',
+          status:    'eq.available',
+          location:  `eq.${location}`,
+        },
+      });
+      setServices(data);
+    } catch (e: any) {
+      Alert.alert('Fetch error', e.message);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView style={styles.flex}>
+      <Appbar.Header>
+        <Appbar.Content title="Available Caregivers" />
+      </Appbar.Header>
+
+      <View style={styles.searchRow}>
+        <TextInput
+          mode="outlined"
+          label="Location"
+          value={location}
+          onChangeText={setLocation}
+          style={styles.input}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <Button mode="contained" onPress={load} style={styles.button}>
+          Go
+        </Button>
+      </View>
+
+      <FlatList
+        data={services}
+        keyExtractor={i => String(i.event_id)}
+        ListEmptyComponent={() => <Paragraph style={styles.empty}>No services found.</Paragraph>}
+        contentContainerStyle={services.length===0 && styles.emptyContainer}
+        renderItem={({ item }) => (
+          <Card style={styles.card} elevation={2}>
+            <Card.Content>
+              <Title>Event #{item.event_id}</Title>
+              <Paragraph>When: {new Date(item.date_time).toLocaleString()}</Paragraph>
+              <Paragraph>Where: {item.location}</Paragraph>
+            </Card.Content>
+          </Card>
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  flex:           { flex: 1 },
+  searchRow:      { flexDirection: 'row', padding: 16 },
+  input:          { flex: 1, marginRight: 8 },
+  button:         { alignSelf: 'center' },
+  card:           { marginHorizontal: 16, marginBottom: 12 },
+  empty:          { textAlign: 'center', marginTop: 32, color: 'gray' },
+  emptyContainer: { flex:1, justifyContent:'center' },
 });
