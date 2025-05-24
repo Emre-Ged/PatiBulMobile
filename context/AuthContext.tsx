@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { Alert } from 'react-native';
   
-  const API = 'http://192.168.0.100:3000';
+  const API = 'http://192.168.0.105:3000';
   
   type User = {
     user_id: number;

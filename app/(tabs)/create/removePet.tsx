@@ -16,7 +16,7 @@ import {
 } from 'react-native-paper';
 import { AuthContext } from '../../../context/AuthContext';
 
-const API = 'http://192.168.0.100:3000';
+const API = 'http://192.168.0.105:3000';
 
 export default function RemovePetScreen() {
   const { user } = useContext(AuthContext);

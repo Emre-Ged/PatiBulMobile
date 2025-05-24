@@ -17,7 +17,7 @@ import {
   Title,
 } from 'react-native-paper';
 
-const API = 'http://192.168.0.100:3000';
+const API = 'http://192.168.0.105:3000';
 
 export default function HomeScreen() {
   const [location, setLocation] = useState('Girne Park');

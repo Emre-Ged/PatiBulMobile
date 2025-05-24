@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, SafeAreaView, StyleSheet } from 'react-native';
 import { Appbar, Card, Paragraph, Title } from 'react-native-paper';
 
-const API = 'http://192.168.0.100:3000';
+const API = 'http://192.168.0.105:3000';
 
 export default function ReviewsScreen() {
   const { reviewed_id } = useLocalSearchParams<{ reviewed_id: string }>();
