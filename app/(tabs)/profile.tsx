@@ -169,16 +169,15 @@ export default function ProfileScreen() {
             </Card.Content>
             <Card.Actions>
               <Button
-                mode="text"
-                onPress={() => {
+                mode="outlined"
+                onPress={() =>
                   Alert.alert(
                     'Delete Pet?',
                     'This will remove the pet permanently.',
                     [
-                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Cancel', style:'cancel' },
                       {
-                        text: 'Delete',
-                        style: 'destructive',
+                        text:'Delete', style:'destructive',
                         onPress: async () => {
                           try {
                             await axios.delete(`${API}/pets?pet_id=eq.${item.pet_id}`);
@@ -189,10 +188,20 @@ export default function ProfileScreen() {
                         }
                       }
                     ]
-                  );
-                }}
+                  )
+                }
               >
                 Delete
+              </Button>
+
+              <Button
+                mode="contained"
+                onPress={() => router.push({
+                  pathname: 'create/editPet',
+                  params: { pet_id: item.pet_id.toString() }
+                })}
+              >
+                Edit
               </Button>
             </Card.Actions>
           </Card>

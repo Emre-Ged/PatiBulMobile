@@ -2,11 +2,11 @@
 import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
 import {
-    Alert,
-    SafeAreaView,
-    SectionList,
-    StyleSheet,
-    TouchableOpacity
+  Alert,
+  SafeAreaView,
+  SectionList,
+  StyleSheet,
+  TouchableOpacity
 } from 'react-native';
 import { Button, Card, Paragraph, Title } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
@@ -43,7 +43,8 @@ export default function MatchScreen() {
         axios.get(`${API}/care_event`, {
           params: {
             role_type: 'eq.Caregiver',
-            status:    'eq.available'
+            status:    'eq.available',
+            select:    '*,user_main(name)'
           }
         })
       ]);
@@ -114,6 +115,7 @@ export default function MatchScreen() {
                     #{item.event_id} @ {new Date(item.date_time).toLocaleString()}
                   </Paragraph>
                   <Paragraph>{item.location}</Paragraph>
+                  <Paragraph>Caregiver: {item.user_main?.name}</Paragraph>
                 </Card.Content>
                 <Card.Actions>
                   <Button
