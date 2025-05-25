@@ -1,4 +1,5 @@
 // app/(tabs)/explore.tsx
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import React, { useState } from 'react';
 import {
@@ -13,6 +14,7 @@ import {
   Button,
   Card,
   Paragraph,
+  TextInput,
 } from 'react-native-paper';
 
 const API = 'http://192.168.0.100:3000';
@@ -20,17 +22,27 @@ const API = 'http://192.168.0.100:3000';
 export default function ExploreScreen() {
   const [results, setResults]       = useState<any[]>([]);
   const [loading, setLoading]       = useState(false);
+  const [fromDate, setFromDate] = useState<string>(''); 
+  const [toDate, setToDate]     = useState<string>('');
+  const [showPicker, setShowPicker] = useState<'from'|'to'|null>(null);
 
   const runSearch = async () => {
     setLoading(true);
     try {
-      // fetch pending Owner requests
-      const params: any = {};
-      params.select      = 'event_id,date_time,location,user_main(name),pets(name,pet_id,type,breed)';
-      params.role_type   = 'eq.Owner';
-      params.status      = 'eq.pending';
+      const params = new URLSearchParams();
+      params.append('select', 'event_id,date_time,location,user_main(name),pets(name,pet_id,type,breed)');
+      params.append('role_type', 'eq.Owner');
+      params.append('status', 'eq.pending');
 
-      const { data } = await axios.get(`${API}/care_event`, { params });
+      if (fromDate) {
+        params.append('date_time', `gte.${fromDate}`);
+      }
+      if (toDate) {
+        params.append('date_time', `lte.${toDate}`);
+      }
+
+      const url = `${API}/care_event?${params.toString()}`;
+      const { data } = await axios.get(url);
 
       setResults(data);
     } catch(e: any) {
@@ -44,11 +56,81 @@ export default function ExploreScreen() {
     <SafeAreaView style={{flex:1}}>
       <Appbar.Header><Appbar.Content title="Available Requests" /></Appbar.Header>
       <View style={styles.filters}>
+        <TextInput
+          label="From Date"
+          value={
+            fromDate
+              ? new Date(fromDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Any'
+          }
+          editable={false}
+          style={styles.input}
+          left={
+            <TextInput.Icon
+              icon="calendar"
+              forceTextInputFocus={false}
+              onPress={() => {
+                setShowPicker('from');
+              }}
+            />
+          }
+          right={
+            <TextInput.Icon
+              icon="close-circle"
+              onPress={() => setFromDate('')}
+            />
+          }
+        />
+        <TextInput
+          label="To Date"
+          value={
+            toDate
+              ? new Date(toDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Any'
+          }
+          editable={false}
+          style={styles.input}
+          left={
+            <TextInput.Icon
+              icon="calendar"
+              forceTextInputFocus={false}
+              onPress={() => {
+                setShowPicker('to');
+              }}
+            />
+          }
+          right={
+            <TextInput.Icon
+              icon="close-circle"
+              onPress={() => setToDate('')}
+            />
+          }
+        />
         <Button mode="contained" onPress={runSearch} loading={loading}>
           Search
         </Button>
       </View>
-
+      {showPicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display="default"
+          onChange={(event: DateTimePickerEvent, selected) => {
+            if (selected) {
+              const yyyy = selected.getFullYear();
+              const mm = String(selected.getMonth() + 1).padStart(2, '0');
+              const dd = String(selected.getDate()).padStart(2, '0');
+              const dateStr = `${yyyy}-${mm}-${dd}`;
+              if (showPicker === 'from') {
+                setFromDate(dateStr);
+              } else {
+                setToDate(dateStr);
+              }
+            }
+            setShowPicker(null);
+          }}
+        />
+      )}
       <FlatList
         data={results}
         keyExtractor={(item, index) =>
@@ -79,4 +161,5 @@ const styles = StyleSheet.create({
   filters: { padding:16 },
   card:    { margin:16, marginBottom:12 },
   empty:   { textAlign:'center', marginTop:32, color:'gray' },
+  input:   { marginBottom: 12 },
 });

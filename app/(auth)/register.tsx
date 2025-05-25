@@ -1,13 +1,15 @@
 // app/(auth)/register.tsx
+import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
 import {
-    SafeAreaView,
-    StyleSheet
+  SafeAreaView,
+  StyleSheet
 } from 'react-native';
 import {
-    Appbar,
-    Button,
-    TextInput
+  Appbar,
+  Button,
+  Snackbar,
+  TextInput
 } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -17,11 +19,15 @@ export default function RegisterScreen() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const router = useRouter();
 
   const onSubmit = async () => {
     setLoading(true);
     try {
       await register(name, email, password);
+      setSuccessVisible(true);
+      router.replace('(tabs)');
     } catch {}
     setLoading(false);
   };
@@ -57,6 +63,13 @@ export default function RegisterScreen() {
         >
           Register
         </Button>
+        <Snackbar
+          visible={successVisible}
+          onDismiss={() => setSuccessVisible(false)}
+          duration={2000}
+        >
+          Registration successful!
+        </Snackbar>
       </SafeAreaView>
     </>
   );
