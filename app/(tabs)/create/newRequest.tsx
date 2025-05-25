@@ -1,6 +1,6 @@
 // app/(tabs)/newRequest.tsx
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -19,7 +19,10 @@ import {
 
 const API = 'http://192.168.0.100:3000';
 
+import { AuthContext } from '../../../context/AuthContext';
+
 export default function NewRequestScreen() {
+  const { user } = useContext(AuthContext);
   const [petId, setPetId]       = useState('');
   const [dateTime, setDateTime] = useState(''); 
   const [location, setLocation] = useState('');
@@ -34,7 +37,7 @@ export default function NewRequestScreen() {
     setLoading(true);
     try {
       await axios.post(`${API}/care_event`, {
-        user_id:          1,
+        user_id:          user?.user_id,
         pet_id:           parseInt(petId, 10),
         date_time:        dateTime,
         location,

@@ -41,6 +41,9 @@ export default function TabLayout() {
       <Tabs.Screen name="analytics"options={{ title: 'Stats'    }} />
       <Tabs.Screen name="profile"  options={{ title: 'Profile'  }} />
       <Tabs.Screen name="create"   options={{ title: 'Create'   }} />
+      <Tabs.Screen name="bookings" options={{ title: 'Bookings', tabBarIcon: ({ color, size }) => (
+      <Ionicons name="book-outline" size={size} color={color}/>)}} />
+      <Tabs.Screen name="MatchScreen" options={{ title: 'Match' }}       />
     </Tabs>
   );
 }

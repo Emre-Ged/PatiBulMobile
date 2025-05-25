@@ -1,45 +1,54 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  Alert,
-  SafeAreaView,
-  StyleSheet,
-} from 'react-native';
-import {
-  Appbar,
-  Button,
-  Snackbar,
-  TextInput,
-  Title,
-} from 'react-native-paper';
+import React, { useContext, useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Appbar, Button, Snackbar, TextInput, Title } from 'react-native-paper';
+import { AuthContext } from '../../../context/AuthContext';
 
 const API = 'http://192.168.0.100:3000';
 
 export default function ReviewForm() {
-  const { event_id, reviewed_id } = useLocalSearchParams<{ event_id: string; reviewed_id: string }>();
-  const reviewer_id = 1; // TODO: from auth
+  const { user } = useContext(AuthContext);
   const router = useRouter();
+  const { booking_id, reviewed_id, event_id } = useLocalSearchParams<{ booking_id: string; reviewed_id: string; event_id: string }>();
+  const bid = booking_id ?? event_id;
+  const bId = bid ? parseInt(bid, 10) : null;
 
-  const [rating, setRating] = useState('');
-  const [comment, setComment] = useState('');
-  const [visible, setVisible] = useState(false);
+  const [otherUserId, setOtherUserId] = useState<number | null>(null);
+  const [rating, setRating]           = useState<string>('');
+  const [comment, setComment]         = useState<string>('');
+  const [loading, setLoading]         = useState(false);
+  const [visible, setVisible]         = useState(false);
 
-  const submit = async () => {
-    if (!rating) return Alert.alert('Please enter a rating.');
+  useEffect(() => {
+    if (reviewed_id) {
+      setOtherUserId(parseInt(reviewed_id, 10));
+    }
+  }, [reviewed_id]);
+
+  const submitReview = async () => {
+    if (!otherUserId || !rating) {
+      return Alert.alert('Please pick a rating');
+    }
+    setLoading(true);
     try {
       await axios.post(`${API}/reviews`, {
-        reviewer_id:    reviewer_id,
-        reviewed_id:    parseInt(reviewed_id, 10),
-        event_id:       parseInt(event_id, 10),
-        rating:         parseFloat(rating),
+        booking_id:   bId!,
+        reviewer_id:  user!.user_id,
+        reviewed_id:  otherUserId,
+        rating:       parseFloat(rating),
         review_comment: comment || null,
       });
       setVisible(true);
-      // After a moment, go back
+      setRating('');
+      setComment('');
+      // after a moment go back
       setTimeout(() => router.back(), 1000);
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Error submitting review', e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,27 +56,46 @@ export default function ReviewForm() {
     <>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title="Leave Review" />
+        <Appbar.Content title="Leave a Review" />
       </Appbar.Header>
 
-      <SafeAreaView style={styles.container}>
-        <Title>Event #{event_id}</Title>
-        <TextInput
-          label="Rating (0.0–5.0)"
-          value={rating}
-          onChangeText={setRating}
-          keyboardType="decimal-pad"
-          style={styles.input}
-        />
+      <ScrollView contentContainerStyle={styles.container}>
+        <Title style={styles.title}>Review Booking #{bId}</Title>
+        <Title style={styles.title}>Rating</Title>
+        <View style={styles.starRow}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <TouchableOpacity key={i} onPress={() => setRating(String(i))}>
+              <MaterialIcons
+                name={i <= Number(rating) ? "star" : "star-border"}
+                size={32}
+                color="#FFD700"
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
         <TextInput
           label="Comment (optional)"
           value={comment}
           onChangeText={setComment}
           multiline
-          style={[styles.input, { height: 100 }]}
+          style={styles.input}
         />
-        <Button mode="contained" onPress={submit}>Submit</Button>
-      </SafeAreaView>
+        <Button
+          mode="contained"
+          onPress={submitReview}
+          loading={loading}
+          style={styles.button}
+        >
+          Submit Review
+        </Button>
+        <Button
+          mode="text"
+          onPress={() => router.replace('/bookings')}
+          style={styles.button}
+        >
+          Back to Bookings
+        </Button>
+      </ScrollView>
 
       <Snackbar
         visible={visible}
@@ -81,6 +109,13 @@ export default function ReviewForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1, padding:16 },
-  input:     { marginBottom:12 },
+  container: { padding: 16 },
+  title:     { textAlign: 'center', marginVertical: 12 },
+  input:     { marginBottom: 16 },
+  button:    { marginTop: 8 },
+  starRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
 });

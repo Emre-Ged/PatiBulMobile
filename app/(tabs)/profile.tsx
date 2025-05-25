@@ -6,7 +6,8 @@ import {
   Alert,
   FlatList,
   SafeAreaView,
-  StyleSheet
+  StyleSheet,
+  View
 } from 'react-native';
 import {
   Appbar,
@@ -37,7 +38,35 @@ export default function ProfileScreen() {
 
   const [pets,    setPets]    = useState<any[]>([]);
   const [reviews,setReviews]  = useState<any[]>([]);
+  // compute average rating from reviews or fallback to stored rating
+  const avgRating = reviews.length > 0
+    ? (
+        reviews.reduce((sum, r) => sum + parseFloat(r.rating), 0) /
+        reviews.length
+      ).toFixed(1)
+    : userData?.rating?.toFixed(1) ?? '0.0';
   const [userData,    setUser]    = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    if (!userId) return;
+    setRefreshing(true);
+    try {
+      // reload user data
+      const userResp = await axios.get(`${API}/user_main?user_id=eq.${userId}`);
+      setUser(userResp.data[0]);
+      // reload pets
+      const petsResp = await axios.get(`${API}/pets?owner_id=eq.${userId}`);
+      setPets(petsResp.data);
+      // reload reviews
+      const revResp = await axios.get(`${API}/reviews?reviewed_id=eq.${userId}`);
+      setReviews(revResp.data);
+    } catch (e) {
+      Alert.alert('Error refreshing', e.message);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   // helper to reload pets list
   async function loadPets() {
@@ -75,7 +104,7 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <Card.Title
             title={userData.name}
-            subtitle={`${userData.rating} ★`}
+            subtitle={`${avgRating} ★`}
             left={props =>
               <Avatar.Text
                 {...props}
@@ -128,7 +157,10 @@ export default function ProfileScreen() {
         renderItem={({item}) => (
           <Card style={styles.card}>
             <Card.Content>
-              <Title>{item.name} ({item.type})</Title>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title>{item.name} ({item.type})</Title>
+                <Paragraph style={{ fontSize: 12, color: 'gray' }}>Pet Id: {item.pet_id}</Paragraph>
+              </View>
               <Paragraph>Breed: {item.breed}</Paragraph>
               <Paragraph>Age: {item.age}</Paragraph>
               {item.special_needs && (
@@ -165,6 +197,8 @@ export default function ProfileScreen() {
             </Card.Actions>
           </Card>
         )}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
       />
 
       {/* Reviews Section */}
@@ -189,6 +223,8 @@ export default function ProfileScreen() {
             </Card.Content>
           </Card>
         )}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
       />
     </SafeAreaView>
   );

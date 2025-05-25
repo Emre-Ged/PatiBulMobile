@@ -1,6 +1,6 @@
 // app/(tabs)/newOffer.tsx
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -15,6 +15,7 @@ import {
   Button, Snackbar,
   TextInput,
 } from 'react-native-paper';
+import { AuthContext } from '../../../context/AuthContext';
 
 const API = 'http://192.168.0.100:3000';
 
@@ -26,14 +27,20 @@ export default function NewOfferScreen() {
   const [loading, setLoading]   = useState(false);
   const [visible, setVisible]   = useState(false);
 
+  const { user } = useContext(AuthContext);
+  const userId = user?.user_id;
+
   const handleSubmit = async () => {
+    if (!userId) {
+      return Alert.alert('Error', 'You must be logged in to submit an offer.');
+    }
     if (!petId || !dateTime || !location) {
       return Alert.alert('Please fill in Pet ID, Date/Time and Location.');
     }
     setLoading(true);
     try {
       await axios.post(`${API}/care_event`, {
-        user_id:          2,                  // replace with caregiver user
+        user_id:          userId,
         pet_id:           parseInt(petId, 10),
         date_time:        dateTime,
         location,
